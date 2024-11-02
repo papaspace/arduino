@@ -47,7 +47,8 @@ class arduino:
       else:
         return msg
 
-arduino=arduino('/dev/ttyACM0')
+#arduino=arduino('/dev/ttyACM0')
+arduino=arduino('COM3')
 arduino.connect()
 
 if arduino.connection:
