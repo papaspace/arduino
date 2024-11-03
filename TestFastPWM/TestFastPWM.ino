@@ -4,11 +4,13 @@
 
 // Constants
 float ANALOG_PORT_CONVERSION=5.0/1024.0;  // Analog port conversion factor (voltage / digital resolution)
+int led1=3;                               // (D) PWM output port (LED brightness control)
+float RD=220.0;                           // LED pre-resistor [Ohm]
 
 // Measurement configuration
-int led1=3;                               // (D) PWM output port (LED brightness)
 float avg_A0;                             // (A) Measured voltage drop (Port A0)
-int numSamples=10000;                     // Number of measurement samples (loops)
+float avg_A1;                             // (A) Measured voltage drop (Port A1)
+int numSamples=1024;                      // Number of measurement samples (loops)
 int jSample;                              // Current measurement sample index
 bool sendData;                            // If true, measurement data will be sent via the serial port
 
@@ -61,7 +63,12 @@ void loop()
   {
     if (sendData)
     {
-      Serial.print(avg_A0*ANALOG_PORT_CONVERSION);
+      Serial.print("A0[V],");
+      Serial.print(avg_A0);
+      Serial.print(",A1[V],");
+      Serial.print(avg_A1);
+      Serial.print(",IRD[uA],");
+      Serial.print((avg_A0-avg_A1)/RD*1.0E6);
       sendData=false;
     }
 
@@ -70,8 +77,9 @@ void loop()
 
   // Perform continous measurement
   // --------------------------------------------------------------------------------------------------
-  int val_A0=analogRead(A0);
-  avg_A0+=val_A0/float(numSamples);
+  avg_A0+=analogRead(A0)/float(numSamples)*ANALOG_PORT_CONVERSION;
+  avg_A1+=analogRead(A1)/float(numSamples)*ANALOG_PORT_CONVERSION;
+
   jSample++;
 
 }
@@ -80,4 +88,5 @@ void resetVariables()
 {
   jSample=0;
   avg_A0=0;
+  avg_A1=0;
 }

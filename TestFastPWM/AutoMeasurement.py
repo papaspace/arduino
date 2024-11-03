@@ -11,9 +11,17 @@ arduino.connect()
 
 if arduino.connection:
 
-  while True:
+  while False:
     num=input("Enter a number: ")
     value=arduino.write_read(num)
     print(value)
+    
+  x=0
+  while True:
+    value=arduino.write_read("%d"%x)
+    print("x,%d,%s"%(x, value))
+    x+=1
+    if x==256:
+      break;
 
 

@@ -8,7 +8,7 @@ float ANALOG_PORT_CONVERSION=5.0/1024.0;  // Analog port conversion factor (volt
 // Measurement configuration
 int led1=3;                               // (D) PWM output port (LED brightness)
 float avg_A0;                             // (A) Measured voltage drop (Port A0)
-int numSamples=10000;                     // Number of measurement samples (loops)
+int numSamples=1024;                      // Number of measurement samples (loops)
 int jSample;                              // Current measurement sample index
 bool sendData;                            // If true, measurement data will be sent via the serial port
 
@@ -45,7 +45,7 @@ void loop()
   {
     if (sendData)
     {
-      Serial.print(avg_A0*ANALOG_PORT_CONVERSION);
+      Serial.print(avg_A0);
       sendData=false;
     }
 
@@ -54,8 +54,7 @@ void loop()
 
   // Perform continous measurement
   // --------------------------------------------------------------------------------------------------
-  int val_A0=analogRead(A0);
-  avg_A0+=val_A0/float(numSamples);
+  avg_A0+=analogRead(A0)/float(numSamples)*ANALOG_PORT_CONVERSION;
   jSample++;
 
 }
