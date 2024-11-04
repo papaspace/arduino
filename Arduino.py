@@ -39,7 +39,7 @@ class arduino:
 
   def write_read(self, x, sleep=0.01):
     print("Sending message <%s>"%x)
-    self.connection.write(bytes(x, 'utf-8'))
+    self.connection.write(bytes(x+"\n", 'utf-8'))
     
     while True:
       msg=self.connection.readline()
