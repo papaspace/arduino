@@ -20,7 +20,7 @@ if arduino.connection:
 
   x=110
   while True:
-    msg=arduino.write_read('%d'%x)
+    msg=arduino.write_read('%d\n'%x)
     y=int(msg)
     print('tx=%d msg=%d'%(x, y))
     if y-x!=1:

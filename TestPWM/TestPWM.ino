@@ -12,6 +12,8 @@ int numSamples=1024;                      // Number of measurement samples (loop
 int jSample;                              // Current measurement sample index
 bool sendData;                            // If true, measurement data will be sent via the serial port
 
+String inputStr="";
+
 void setup()
 {
   Serial.begin(115200); 
@@ -27,16 +29,23 @@ void loop()
   // -------------------------------------------------------------------------------------------------
   if (Serial.available())
   {
-    // Read serial input data
-    // -----------------------------------------------------------------------------------------------
-    delay(50);                            // Wait for the serial buffer to be completely filled
-    int x=Serial.readString().toInt();
 
-    // Configure measurement
-    // -----------------------------------------------------------------------------------------------
-    analogWrite(led1, x);
-    resetVariables();
-    sendData=true;                        // Trigger serial data reply when measurement is done
+    inputStr += Serial.readString();
+    if (inputStr[inputStr.length()-1]=='\n')
+    {
+      // Read serial input data
+      // ---------------------------------------------------------------------------------------------
+      x = inputStr.toInt(); 
+
+      // Configure measurement
+      // ---------------------------------------------------------------------------------------------
+      analogWrite(led1, x);
+      resetVariables();
+      sendData=true;                        // Trigger serial data reply when measurement is done
+
+      inputStr="";
+    }    
+
   }
 
   // Return data and reset measurement variables
