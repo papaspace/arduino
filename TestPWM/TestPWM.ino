@@ -9,6 +9,7 @@ float ANALOG_PORT_CONVERSION=5.0/1023.0;  // Analog port conversion factor (volt
 int led1=3;                               // (D) PWM output port (LED brightness)
 float avg_A0;                             // (A) Measured voltage drop (Port A0)
 float ravg_A0;
+float ravg_A1;
 int numSamples=1024;                      // Number of measurement samples (loops)
 int jSample;                              // Current measurement sample index
 bool sendData;                            // If true, measurement data will be sent via the serial port
@@ -32,11 +33,12 @@ void loop()
   {
 
     inputStr += Serial.readString();
-    if (inputStr[inputStr.length()-1]=='\n')
+    if (inputStr[inputStr.length()-1]=='\n' && inputStr.length()>3)
     {
       // Read serial input data
       // ---------------------------------------------------------------------------------------------
-      int x = inputStr.toInt(); 
+      led1 = inputStr.substring(0,2).toInt();
+      int x = inputStr.substring(2).toInt(); 
 
       // Configure measurement
       // ---------------------------------------------------------------------------------------------
@@ -55,9 +57,9 @@ void loop()
   {
     if (sendData)
     {
-      Serial.print(avg_A0);
+      Serial.print(ravg_A0, 6);
       Serial.print(",");
-      Serial.print(ravg_A0);
+      Serial.print(ravg_A1, 6);
       sendData=false;
     }
 
@@ -67,12 +69,13 @@ void loop()
   // Perform continous measurement
   // --------------------------------------------------------------------------------------------------
   float act_A0=float(analogRead(A0))*ANALOG_PORT_CONVERSION;
+  float act_A1=float(analogRead(A1))*ANALOG_PORT_CONVERSION;
   avg_A0+=act_A0/float(numSamples);
 
   // Recursive average: (a[0] + (n - 1) * average(a[1:])) / n
   jSample++;
   ravg_A0 = (act_A0 + (jSample-1) * ravg_A0) / jSample;
-
+  ravg_A1 = (act_A1 + (jSample-1) * ravg_A1) / jSample;
 }
 
 void resetVariables()
