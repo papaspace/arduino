@@ -8,7 +8,7 @@ sys.path.append(os.path.join(pwd, '..'))
 from Arduino import arduino
 
 
-PWM_PIN="10"
+PWM_PIN="03"
 RD=215.0        # LED pre-resistor [Ohm]
 msgs=[]
 
@@ -31,17 +31,16 @@ if arduino.connection:
     msg="%d,%s"%(x, value)
     msgs.append(msg.split(","))
     print(msg)
-    x+=1
+    x+=10
     if x>=256:
       break
 
-    #data=np.array(msgs).T
+    A0=float(msgs[-1][1])   # LED voltage (+)
+    A1=float(msgs[-1][2])   # LED voltage (-)
+    VD=A1-A0
+    ID=A0/RD                # LED pre-resistor current
 
-    A0=float(msgs[-1][1])   # LED voltage
-    A1=float(msgs[-1][2])   # PWM voltage
-    ID=(A1-A0)/RD           # LED pre-resistor current
-
-    plt.scatter(A0, ID, marker='.', color='b')
+    plt.scatter(VD, ID, marker='.', color='b')
     plt.xlim([0, 5])
     plt.ylim([0, 5.0/RD])
     plt.xlabel("UD")
