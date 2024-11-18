@@ -9,7 +9,7 @@ from Arduino import arduino
 
 
 PWM_PIN="03"
-RD=215.0        # LED pre-resistor [Ohm]
+RD=66.8               # LED pre-resistor [Ohm]
 msgs=[]
 
 #arduino=arduino('/dev/ttyACM0')
@@ -25,7 +25,8 @@ if arduino.connection:
     
   plt.figure(figsize=(10,10))
   x=0
-  
+  VD_list = list()
+  ID_list = list()
   while True:
     value=arduino.write_read("%s%d"%(PWM_PIN, x))
     msg="%d,%s"%(x, value)
@@ -35,14 +36,17 @@ if arduino.connection:
     if x>=256:
       break
 
-    A0=float(msgs[-1][1])   # LED voltage (+)
-    A1=float(msgs[-1][2])   # LED voltage (-)
+    A0=float(msgs[-1][2])   # LED voltage (-)
+    A1=float(msgs[-1][1])   # LED voltage (+)
     VD=A1-A0
     ID=A0/RD                # LED pre-resistor current
+    VD_list.append(VD)
+    ID_list.append(ID)
+    print("UD = %9.6f, ID = %9.6f "%(VD, ID))
 
     plt.scatter(VD, ID, marker='.', color='b')
-    plt.xlim([0, 5])
-    plt.ylim([0, 5.0/RD])
+    plt.xlim([0, 2])
+    plt.ylim([0, 0.005])
     plt.xlabel("UD")
     plt.ylabel("ID")
     plt.grid(True)
@@ -52,4 +56,5 @@ if arduino.connection:
   value=arduino.write_read("%s%d"%(PWM_PIN, x))
 
   plt.close()
-
+  data = np.array([VD_list, ID_list]).T
+  np.savetxt("./data.csv",data, delimiter=",", header="UD, ID")

@@ -3,7 +3,7 @@
 // After the full measurement cycle is completed, we send the measurement data via the serial port.
 
 // Constants
-float ANALOG_PORT_CONVERSION=5.0/1024.0;  // Analog port conversion factor (voltage / digital resolution)
+float ANALOG_PORT_CONVERSION=5.0/1023.0;  // Analog port conversion factor (voltage / digital resolution)
 int led1=3;                               // (D) PWM output port (LED brightness control)
 float RD=220.0;                           // LED pre-resistor [Ohm]
 

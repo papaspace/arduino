@@ -100,5 +100,5 @@ void reset()
   ravg_A0=0;
   ravg_A1=0;
 
-  delay(1000);
+  delay(10);
 }
