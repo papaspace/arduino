@@ -1,26 +1,33 @@
 
+Position von LED und RD am Schaltplan vertauscht!
 
 Ex1: low pass filter only
-R1 =   2   kOhm
-C1 =  20   uF
-Rd =  66.8 Ohm
+    R1 =   2   kOhm
+    C1 =  20   uF
+    Rd =  66.8 Ohm
 
 Ex2: with OPV / normal PWM
-R1 =   2   kOhm
-C1 =  20   uF
-Rd = 268.5 Ohm
+    R1 =   2   kOhm
+    C1 =  20   uF
+    Rd = 268.5 Ohm
 
 Ex3: with OPV / fast PWM @ 16 MHz/256 = 62.5 kHz
-R1 =   2   kOhm
-C1 =  20   uF
-Rd = 268.5 Ohm
+    R1 =   2   kOhm
+    C1 =  20   uF
+    Rd = 268.5 Ohm
 
 Ex4: with OPV / fast PWM @ 16 MHz/256 = 62.5 kHz / delay(10)
-R1 =   2   kOhm
-C1 = 200   nF
-Rd = 268.5 Ohm
+    R1 =   2   kOhm
+    C1 = 200   nF
+    Rd = 268.5 Ohm
 
 Ex5: with OPV / fast PWM @ 16 MHz/256 = 62.5 kHz / delayMicrosencs(160)
-R1 =   2   kOhm
-C1 = 200   nF
-Rd = 268.5 Ohm
+    R1 =   2   kOhm
+    C1 = 200   nF
+    Rd = 268.5 Ohm
+
+    Si:         Ex5_UD_ID_opv_fast_PWM_160usDelay
+    Yellow LED: Ex5_yellow
+    Red LED:    Ex5_red
+    Green LED:  Ex5_green
+    Zehner:     Ex5_Zehner

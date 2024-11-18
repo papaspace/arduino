@@ -45,7 +45,7 @@ if arduino.connection:
     print("UD = %9.6f, ID = %9.6f "%(VD, ID))
 
     plt.scatter(VD, ID, marker='.', color='b')
-    plt.xlim([0, 2])
+    plt.xlim([0, 4])
     plt.ylim([0, 0.02])
     plt.xlabel("UD")
     plt.ylabel("ID")
