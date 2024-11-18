@@ -37,7 +37,7 @@ class arduino:
 
     raise ValueError('Unable to find port '+self.port_name)
 
-  def write_read(self, x, sleep=0.01):
+  def write_read(self, x, sleep=0.0001):
     print("Sending message <%s>"%x)
     self.connection.write(bytes(x+"\n", 'utf-8'))
     

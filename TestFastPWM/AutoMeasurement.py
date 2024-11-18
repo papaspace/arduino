@@ -9,7 +9,7 @@ from Arduino import arduino
 
 
 PWM_PIN="03"
-RD=66.8               # LED pre-resistor [Ohm]
+RD=268.5               # LED pre-resistor [Ohm]
 msgs=[]
 
 #arduino=arduino('/dev/ttyACM0')
@@ -32,7 +32,7 @@ if arduino.connection:
     msg="%d,%s"%(x, value)
     msgs.append(msg.split(","))
     print(msg)
-    x+=10
+    x+=2
     if x>=256:
       break
 
@@ -46,7 +46,7 @@ if arduino.connection:
 
     plt.scatter(VD, ID, marker='.', color='b')
     plt.xlim([0, 2])
-    plt.ylim([0, 0.005])
+    plt.ylim([0, 0.02])
     plt.xlabel("UD")
     plt.ylabel("ID")
     plt.grid(True)
