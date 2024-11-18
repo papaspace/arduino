@@ -31,3 +31,8 @@ Ex5: with OPV / fast PWM @ 16 MHz/256 = 62.5 kHz / delayMicrosencs(160)
     Red LED:    Ex5_red
     Green LED:  Ex5_green
     Zehner:     Ex5_Zehner
+
+Ex6: only diode and resistor
+    Rd = 268.5 Ohm
+
+    Ex6_zehner
