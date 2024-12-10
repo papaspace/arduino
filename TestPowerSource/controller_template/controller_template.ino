@@ -4,20 +4,19 @@
 
 #define RS 12.2     //shuntwiderstand
 
-
 #define outMax 253  //PWM Limit
 #define outMin 2
-#define iMax 40     //current Limit
-#define iMin 1      
+#define iMax 6      //current Limit
+#define iMin 0.2      
 
 // TODO pin defines
-#define v_pin  A0   // Ua
-#define i_pin1 A1   // U1 
-#define i_pin2 A2   // U2
-#define pwm_pin 5 
+#define v_pin  A0           // Ua
+#define i_pin1 A1           // U1 
+#define i_pin2 A2           // U2
+#define pwm_pin 5           // PWM output pin
 
-#define PS 8 //muss richtig gesetz werden in setup
-#define f_cpu 1600000       //am arduino überprüfen!
+#define PS 8                // muss richtig gesetz werden in setup
+#define f_cpu 1600000       // am arduino überprüfen!
 #define f_timer f_cpu/8
 //#define comp 5
 #define fPWM 970
@@ -36,8 +35,9 @@ double sample_time = N_AVG * dT;
 volatile uint16_t timerCount = 0;
 volatile uint32_t timerCount2 = 0;
 volatile uint16_t sumCount = 0;
-volatile uint32_t v_avg = 0;      //type of this needs to change with n_avg
-volatile int64_t i_avg = 0; 
+volatile uint32_t v_sum_A0 = 0;      //type of this needs to change with n_avg
+volatile uint32_t v_sum_A1 = 0;      //type of this needs to change with n_avg
+volatile int64_t i_sum = 0; 
 
 
 double errSum = 0;          //Integralanteilr
@@ -45,26 +45,31 @@ double lastErr = 0;         //Fehle für differentielen anteil
 double error = 0; 
 
 //Kritische Parameter für Zigle nichols eingeben
-#define Ku 6.0          //kritische verstärkung Zigler-Nichols
-#define Tu 2.0          //Periodendauer ZS
+#define Ku 200.0        // kritische verstärkung Zigler-Nichols
+#define Tu 1.0          // Periodendauer ZS
 
 //Reglerparameter
-//double Kp = Ku*0.45;
-//double Ki = Kp/(0.83*Tu);
-//double Kd = 0.0;
+double Kp = Ku*0.45;
+double Ki = Kp/(0.83*Tu);
+double Kd = 0.0;
 
-double Kp = Ku*0.33;
-double Ki = 0.66*Ku/Tu;
-double Kd = 0.0;//0.105*Ku*Tu;
+//double Kp = Ku*0.33;
+//double Ki = 0.66*Ku/Tu;
+//double Kd = 0.0;//0.105*Ku*Tu;
+
+//double Kp = 500.0;
+//double Ki = 0.0;
+//double Kd = 0.0;
 
 
 //Stellgröße, wirkt auf Regeltrecke
 volatile int16_t duty_cycle = 0;
        
 
-double i_set = 12;      //Stellgröße
-double v_avg_f = 0;     //Mittelwert Spannung 
-double i_avg_f = 0;     //Mitlwert Strom
+double i_set = iMin+(iMax-iMin)*0.5;      //Stellgröße
+double v_avg_A0 = 0;     //Mittelwert Spannung (Ausgang)
+double v_avg_A1 = 0;     //Mittelwert Spannung (Shunt)
+double i_avg_RS = 0;     //Mitlwert Strom
 int tik = 0;
       
 uint8_t enablePID = 1;
@@ -109,80 +114,83 @@ double PID(double i_real)
       tik+=1;
       if (tik>10)
       {
-        duty_cycle = duty_cycle + 1;
+        duty_cycle = duty_cycle + 10;
         if (duty_cycle>255)
         {
           duty_cycle=0;
         }
-        analogWrite(pwm_pin,255-duty_cycle);  
+        analogWrite(pwm_pin,duty_cycle);  
   
         tik=0;
       }
-      return 0.0;
+      return 13.0;
     }
+    else
+    {
+      error = i_set - i_real;
 
-  error = i_set - i_real;
+      //TODO
+      //errSum += 0; //Sum up error terms times dT
+      {
+        double dT = N_AVG * 104E-6;
+        errSum += error * dT;
+      }
 
-  //TODO
-  //errSum += 0; //Sum up error terms times dT
-  {
-    double dT = N_AVG * 104E-6;
-    errSum += error * dT;
-  }
+      //Anti Windup
+      //if(errSum > outMax) errSum= outMax*sample_time; //Limit output range
+      //else if(errSum < outMin) errSum= outMin*sample_time;
 
-  //Anti Windup
-  //if(errSum > outMax) errSum= outMax*sample_time; //Limit output range
-  //else if(errSum < outMin) errSum= outMin*sample_time;
+      //TODO
+      //double dErr = 1; //Time differential
+      double dErr = (error - lastErr) / dT;
 
-  //TODO
-  //double dErr = 1; //Time differential
-  double dErr = (error - lastErr) / dT;
+      //PID output Sum
+      duty_cycle = Kp * error + Kd * dErr + Ki * errSum;
 
-  //PID output Sum
-  duty_cycle = Kp * error + Kd * dErr + Ki * errSum;
-
-  //Limit output range
-  if(duty_cycle > outMax) duty_cycle= outMax; //Limit output range
-  else if(duty_cycle < outMin) duty_cycle= outMin;
-  
-  if(enablePID){
-    analogWrite(pwm_pin,255-duty_cycle);  
-  }  
-  lastErr = error;
-  return error;
+      //Limit output range
+      if(duty_cycle > outMax) duty_cycle= outMax; //Limit output range
+      else if(duty_cycle < outMin) duty_cycle= outMin;
+      
+      if(enablePID){
+        analogWrite(pwm_pin,duty_cycle);  
+      }  
+      lastErr = error;
+      return error;
+    }
 
 }
 
 ISR(TIMER1_COMPA_vect)
 {
-      //Summ N terms of ADC reulsts and Average
+      // Sum N_AVG terms of ADC results and average
       sumCount++;
-        if(sumCount == N_AVG){
-           v_avg_f = ((double) 5/1023)*((double) v_avg/N_AVG);
-           i_avg_f = 1000 * ((double) 5/1023)*((double) i_avg/(N_AVG*RS));
-           
-           error = PID(i_avg_f);
-          
-          v_avg = 0;  //reset Variables 
-          i_avg = 0;
-          sumCount = 0;
-        }
-        //TODO
-        //v_avg += 0;  //Read analog Voltage
-        //i_avg += 0;  //Read analog Current
-        {
-          double Ua = analogRead(v_pin);
-          double U1 = analogRead(i_pin1);
-          double U2 = analogRead(i_pin2);
-          v_avg += Ua;
-          i_avg += (U1 - Ua) / RS;
-        }
+      if(sumCount == N_AVG)
+      {
+        v_avg_A0 = 5.0/1023.0*((double)v_sum_A0/(double)N_AVG);
+        v_avg_A1 = 5.0/1023.0*((double)v_sum_A1/(double)N_AVG);
+        i_avg_RS = 1000.0*5.0/1023.0*((double)i_sum/((double)N_AVG));
         
+        error = PID(i_avg_RS);
         
+        // Reset variables
+        v_sum_A0 = 0;
+        v_sum_A1 = 0;
+        i_sum = 0;
+        sumCount = 0;
+      }
+      //TODO
+      //v_avg += 0;  //Read analog Voltage
+      //i_avg += 0;  //Read analog Current
+      {
+        double Ua = analogRead(v_pin);
+        double U1 = analogRead(i_pin1);
+        double U2 = analogRead(i_pin2);
+        v_sum_A0 += Ua;
+        v_sum_A1 += U1;
+        i_sum += (U1 - Ua)/RS;       // Note: To improve accuracy, we postpone division by RS when calculating i_avg_f
+      }
 
-
-
-      // Increment the timer count
+    // Increment the timer count
     timerCount2++;
     // Intervall2: do something every 5s
       if (timerCount2 >= INTERVAL2)   //do something every INTERVAL * 0.00002 s
@@ -192,40 +200,26 @@ ISR(TIMER1_COMPA_vect)
         if(i_set>iMax) i_set = iMin;
     }
     
-    // Increment the timer count
     timerCount++;
-    //Intervall: Print output to Seiell console
-    if (timerCount >= INTERVAL)   //do something every INTERVAL * 0.00002 s
+
+    // At INTERVAL: Print output via serial port
+    if (timerCount >= INTERVAL)
     {
-      double error = PID(i_avg_f);
-      
+      double error = PID(i_avg_RS);
       timerCount = 0; // Reset timer count for the next interval
+
       String output2 = "";
       output2+=String(tik)+",";
       output2+=String(duty_cycle)+",";
-      output2+=String(v_avg_f)+",";
-      output2+=String(i_avg_f)+",";
+      output2+=String(v_avg_A0)+",";
+      output2+=String(v_avg_A1)+",";
+      output2+=String(i_avg_RS)+",";
       output2+=String(i_set)+",";
       output2+=error;
 
       output=output2;
 
       Serial.println(output);
-
-      
-      
-        //Serial.print(v_avg_f);
-        //Serial.print(",");
-        //Serial.print(i_avg_f);
-        //Serial.print(",");
-        //Serial.print( i_set);
-        
-        
-        //Serial.print(",");
-        //Serial.print( error);
-        //Serial.print("\n");
-
-     
     }
   
 }
