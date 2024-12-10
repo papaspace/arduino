@@ -2,17 +2,19 @@
 
 
 
-#define RS 12.2     //shuntwiderstand
+#define RS 12.2             //shuntwiderstand
 
-#define outMax 253  //PWM Limit
+#define outMax 253          //PWM Limit
 #define outMin 2
-#define iMax 6      //current Limit
-#define iMin 0.2      
+#define iMax 40             //current Limit
+#define iMin 1      
 
 // TODO pin defines
 #define v_pin  A0           // Ua
 #define i_pin1 A1           // U1 
 #define i_pin2 A2           // U2
+#define i_pin3 A3           // UR1,1 
+#define i_pin4 A4           // UR1,2
 #define pwm_pin 5           // PWM output pin
 
 #define PS 8                // muss richtig gesetz werden in setup
@@ -37,6 +39,8 @@ volatile uint32_t timerCount2 = 0;
 volatile uint16_t sumCount = 0;
 volatile uint32_t v_sum_A0 = 0;      //type of this needs to change with n_avg
 volatile uint32_t v_sum_A1 = 0;      //type of this needs to change with n_avg
+volatile uint32_t v_sum_A3 = 0;      //type of this needs to change with n_avg
+volatile uint32_t v_sum_A4 = 0;      //type of this needs to change with n_avg
 volatile int64_t i_sum = 0; 
 
 
@@ -45,8 +49,8 @@ double lastErr = 0;         //Fehle für differentielen anteil
 double error = 0; 
 
 //Kritische Parameter für Zigle nichols eingeben
-#define Ku 200.0        // kritische verstärkung Zigler-Nichols
-#define Tu 1.0          // Periodendauer ZS
+#define Ku 20.0        // kritische verstärkung Zigler-Nichols
+#define Tu 0.2          // Periodendauer ZS
 
 //Reglerparameter
 double Kp = Ku*0.45;
@@ -55,12 +59,7 @@ double Kd = 0.0;
 
 //double Kp = Ku*0.33;
 //double Ki = 0.66*Ku/Tu;
-//double Kd = 0.0;//0.105*Ku*Tu;
-
-//double Kp = 500.0;
-//double Ki = 0.0;
-//double Kd = 0.0;
-
+//double Kd = 0.105*Ku*Tu;
 
 //Stellgröße, wirkt auf Regeltrecke
 volatile int16_t duty_cycle = 0;
@@ -69,6 +68,8 @@ volatile int16_t duty_cycle = 0;
 double i_set = iMin+(iMax-iMin)*0.5;      //Stellgröße
 double v_avg_A0 = 0;     //Mittelwert Spannung (Ausgang)
 double v_avg_A1 = 0;     //Mittelwert Spannung (Shunt)
+double v_avg_A3 = 0;     //Mittelwert Spannung (Ri,1)
+double v_avg_A4 = 0;     //Mittelwert Spannung (Ri,2)
 double i_avg_RS = 0;     //Mitlwert Strom
 int tik = 0;
       
@@ -83,6 +84,8 @@ void setup() {
   pinMode(v_pin, INPUT);
   pinMode(i_pin1, INPUT);
   pinMode(i_pin2, INPUT);
+  pinMode(i_pin3, INPUT);
+  pinMode(i_pin4, INPUT);
   
   // Adjusts the pin to output mode
   pinMode(pwm_pin, OUTPUT);
@@ -109,12 +112,12 @@ void loop() {
 double PID(double i_real)
 {
     // Step 2: Measure output voltage in dependance of duty cycle
-    if (false)
+    if (true)
     {
       tik+=1;
       if (tik>10)
       {
-        duty_cycle = duty_cycle + 10;
+        duty_cycle = duty_cycle + 5;
         if (duty_cycle>255)
         {
           duty_cycle=0;
@@ -123,7 +126,7 @@ double PID(double i_real)
   
         tik=0;
       }
-      return 13.0;
+      return 0.0;
     }
     else
     {
@@ -168,6 +171,8 @@ ISR(TIMER1_COMPA_vect)
       {
         v_avg_A0 = 5.0/1023.0*((double)v_sum_A0/(double)N_AVG);
         v_avg_A1 = 5.0/1023.0*((double)v_sum_A1/(double)N_AVG);
+        v_avg_A3 = 5.0/1023.0*((double)v_sum_A3/(double)N_AVG);
+        v_avg_A4 = 5.0/1023.0*((double)v_sum_A4/(double)N_AVG);
         i_avg_RS = 1000.0*5.0/1023.0*((double)i_sum/((double)N_AVG));
         
         error = PID(i_avg_RS);
@@ -175,6 +180,8 @@ ISR(TIMER1_COMPA_vect)
         // Reset variables
         v_sum_A0 = 0;
         v_sum_A1 = 0;
+        v_sum_A3 = 0;
+        v_sum_A4 = 0;
         i_sum = 0;
         sumCount = 0;
       }
@@ -185,8 +192,12 @@ ISR(TIMER1_COMPA_vect)
         double Ua = analogRead(v_pin);
         double U1 = analogRead(i_pin1);
         double U2 = analogRead(i_pin2);
+        double U3 = analogRead(i_pin3);
+        double U4 = analogRead(i_pin4);
         v_sum_A0 += Ua;
         v_sum_A1 += U1;
+        v_sum_A3 += U3;
+        v_sum_A4 += U4;
         i_sum += (U1 - Ua)/RS;       // Note: To improve accuracy, we postpone division by RS when calculating i_avg_f
       }
 
@@ -215,7 +226,9 @@ ISR(TIMER1_COMPA_vect)
       output2+=String(v_avg_A1)+",";
       output2+=String(i_avg_RS)+",";
       output2+=String(i_set)+",";
-      output2+=error;
+      output2+=String(error)+",";
+      output2+=String(v_avg_A3)+",";
+      output2+=String(v_avg_A4);
 
       output=output2;
 
